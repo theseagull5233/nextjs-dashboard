@@ -128,3 +128,22 @@ export async function authenticate(
     throw error;
   }
 }
+
+export async function getCustomerEmail(customerId: string) {
+  try {
+    const customer = await sql`
+      SELECT email
+      FROM customers
+      WHERE id = ${customerId}
+    `;
+
+    if (customer.rows.length === 0) {
+      return null;
+    }
+
+    return customer.rows[0].email;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch customer email.');
+  }
+}

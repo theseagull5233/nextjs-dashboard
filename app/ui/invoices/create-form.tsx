@@ -8,13 +8,38 @@ import {
   UserCircleIcon,
 } from '@heroicons/react/24/outline';
 import { Button } from '@/app/ui/button';
-import { createInvoice } from '@/app/lib/actions';
+import { createInvoice, getCustomerEmail } from '@/app/lib/actions';
 import { useActionState } from 'react'
+import { useState } from 'react';
 
 export default function Form({ customers }: { customers: CustomerField[] }) {
   const initialState = { message: '', errors: {} };
   const [state, dispatch] = useActionState(createInvoice, initialState);
-  // console.error(state)
+  const [selectedCustomerEmail, setSelectedCustomerEmail] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // 处理客户选择变化
+  const handleCustomerChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const customerId = event.target.value;
+    if (!customerId) {
+      setSelectedCustomerEmail('');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // 调用服务端API获取客户邮箱
+      const email = await getCustomerEmail(customerId);
+      console.error(email)
+      setSelectedCustomerEmail(email || '');
+    } catch (error) {
+      console.error('Error fetching customer email:', error);
+      setSelectedCustomerEmail('');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <form action={dispatch}>
       <div className="rounded-md bg-gray-50 p-4 md:p-6">
@@ -30,6 +55,7 @@ export default function Form({ customers }: { customers: CustomerField[] }) {
               className="peer block w-full cursor-pointer rounded-md border border-gray-200 py-2 pl-10 text-sm outline-2 placeholder:text-gray-500"
               defaultValue=""
               aria-describedby="customer-error"
+              onChange={handleCustomerChange}
             >
               <option value="" disabled>
                 Select a customer
@@ -42,6 +68,13 @@ export default function Form({ customers }: { customers: CustomerField[] }) {
             </select>
             <UserCircleIcon className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-500" />
           </div>
+          {/* 显示客户邮箱 */}
+          {selectedCustomerEmail && (
+            <div className="mt-2 text-sm text-gray-600">
+              <span className="font-medium">Email:</span> {selectedCustomerEmail}
+              {isLoading && <span className="ml-2 text-gray-400">Loading...</span>}
+            </div>
+          )}
           <div id="customer-error" aria-live="polite" aria-atomic="true">
             {state.errors?.customerId &&
               state.errors.customerId.map((error: string) => (
